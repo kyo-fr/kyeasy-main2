@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付</title>
+    <script src="https://js.braintreegateway.com/web/dropin/1.33.0/js/dropin.min.js"></script>
+</head>
+<body>
+    <div id="dropin-container"></div>
+    <button id="submit-button">支付</button>
+    
+    <script>
+        var button = document.querySelector('#submit-button');
+        
+        braintree.dropin.create({
+            authorization: '${clientToken}',
+            container: '#dropin-container',
+            paypal: {
+                flow: 'checkout',
+                amount: '${amount}',
+                currency: 'USD'
+            }
+        }, function (createErr, instance) {
+            button.addEventListener('click', function () {
+                instance.requestPaymentMethod(function (err, payload) {
+                    if (err) {
+                        console.error('Error:', err);
+                        return;
+                    }
+                    
+                    // 调用后端支付接口
+                    fetch('/api/payment/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            nonce: payload.nonce,
+                            orderId: '${orderId}',
+                            amount: '${amount}'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            window.location.href = '${returnUrl}';
+                        } else {
+                            alert('支付失败：' + result.message);
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ares.cloud.order.infrastructure.persistence.mapper.ProductInventoryMapper">
+
+    <!-- 商品库存结果映射 -->
+    <resultMap id="ProductInventoryResultMap" type="com.ares.cloud.order.domain.model.valueobject.ProductInventory">
+        <id column="ID" property="productId"/>
+        <result column="NAME" property="productName"/>
+        <result column="PRICE" property="price"/>
+        <result column="INVENTORY" property="currentStock"/>
+        <result column="RESERVED_STOCK" property="reservedStock"/>
+        <result column="AVAILABLE_STOCK" property="availableStock"/>
+        <result column="TENANT_ID" property="merchantId"/>
+        <result column="PRODUCT_SPEC_ID" property="productSpecId"/>
+        <result column="IS_ENABLE" property="enabled"/>
+        <result column="TYPE" property="productType"/>
+        <result column="VERSION" property="version"/>
+        <result column="QUANTITY" property="quantity"/>
+    </resultMap>
+
+    <!-- 根据商品ID查询商品基础信息 -->
+    <select id="selectByProductId" resultMap="ProductInventoryResultMap">
+        SELECT 
+            ID,
+            NAME,
+            PRICE,
+            INVENTORY,
+            0 AS RESERVED_STOCK,
+            INVENTORY AS AVAILABLE_STOCK,
+            TENANT_ID,
+            NULL AS PRODUCT_SPEC_ID,
+            IS_ENABLE,
+            TYPE,
+            VERSION,
+            0 AS QUANTITY
+        FROM PRODUCT_BASE_INFO 
+        WHERE ID = #{productId} 
+          AND TENANT_ID = #{tenantId}
+          AND DELETED = 0
+    </select>
+
+    <!-- 批量查询商品基础信息 -->
+    <select id="selectByProductIds" resultMap="ProductInventoryResultMap">
+        SELECT 
+            ID,
+            NAME,
+            PRICE,
+            INVENTORY,
+            0 AS RESERVED_STOCK,
+            INVENTORY AS AVAILABLE_STOCK,
+            TENANT_ID,
+            NULL AS PRODUCT_SPEC_ID,
+            IS_ENABLE,
+            TYPE,
+            VERSION,
+            0 AS QUANTITY
+        FROM PRODUCT_BASE_INFO 
+        WHERE ID IN
+        <foreach collection="productIds" item="productId" open="(" separator="," close=")">
+            #{productId}
+        </foreach>
+          AND TENANT_ID = #{tenantId}
+          AND DELETED = 0
+    </select>
+
+    <!-- 检查商品是否存在 -->
+    <select id="existsByProductId" resultType="boolean">
+        SELECT CASE WHEN COUNT(1) > 0 THEN 1 ELSE 0 END
+        FROM PRODUCT_BASE_INFO 
+        WHERE ID = #{productId} 
+          AND TENANT_ID = #{tenantId}
+          AND DELETED = 0
+    </select>
+
+    <!-- 检查商品是否启用 -->
+    <select id="isEnabledByProductId" resultType="boolean">
+        SELECT CASE WHEN COUNT(1) > 0 THEN 1 ELSE 0 END
+        FROM PRODUCT_BASE_INFO 
+        WHERE ID = #{productId} 
+          AND TENANT_ID = #{tenantId}
+          AND IS_ENABLE = 'enable'
+          AND DELETED = 0
+    </select>
+
+    <!-- 根据商品ID和规格ID查询商品库存信息 -->
+    <select id="selectByProductIdAndSpecId" resultMap="ProductInventoryResultMap">
+        SELECT 
+            ID,
+            NAME,
+            PRICE,
+            INVENTORY,
+            0 AS RESERVED_STOCK,
+            INVENTORY AS AVAILABLE_STOCK,
+            TENANT_ID,
+            #{productSpecId} AS PRODUCT_SPEC_ID,
+            IS_ENABLE,
+            TYPE,
+            VERSION,
+            0 AS QUANTITY
+        FROM PRODUCT_BASE_INFO 
+        WHERE ID = #{productId} 
+          AND TENANT_ID = #{tenantId}
+          AND DELETED = 0
+    </select>
+
+    <!-- 检查商品规格是否存在 -->
+    <select id="existsSpecByProductIdAndSpecId" resultType="boolean">
+        SELECT CASE WHEN COUNT(1) > 0 THEN 1 ELSE 0 END
+        FROM PRODUCT_BASE_INFO 
+        WHERE ID = #{productId} 
+          AND TENANT_ID = #{tenantId}
+          AND DELETED = 0
+    </select>
+
+    <!-- 检查商品规格是否启用 -->
+    <select id="isSpecEnabledByProductIdAndSpecId" resultType="boolean">
+        SELECT CASE WHEN COUNT(1) > 0 THEN 1 ELSE 0 END
+        FROM PRODUCT_BASE_INFO 
+        WHERE ID = #{productId} 
+          AND TENANT_ID = #{tenantId}
+          AND IS_ENABLE = 'enable'
+          AND DELETED = 0
+    </select>
+
+    <!-- 预留库存 -->
+    <insert id="reserveStock">
+        INSERT INTO PRODUCT_INVENTORY_RESERVATION (
+            ID,
+            ORDER_ID,
+            PRODUCT_ID,
+            TENANT_ID,
+            RESERVED_QUANTITY,
+            STATUS,
+            CREATE_TIME,
+            VERSION
+        ) VALUES (
+            #{id},
+            #{orderId},
+            #{productId},
+            #{tenantId},
+            #{quantity},
+            'RESERVED',
+            #{createTime, jdbcType=BIGINT},
+            1
+        )
+    </insert>
+
+    <!-- 释放预留库存 -->
+    <update id="releaseReservedStock">
+        UPDATE PRODUCT_INVENTORY_RESERVATION 
+        SET STATUS = 'RELEASED',
+            UPDATE_TIME = #{updateTime, jdbcType=BIGINT}
+        WHERE PRODUCT_ID = #{productId}
+          AND TENANT_ID = #{tenantId}
+          AND ORDER_ID = #{orderId}
+          AND STATUS = 'RESERVED'
+          AND DELETED = 0
+    </update>
+
+    <!-- 扣减实际库存 -->
+    <update id="deductStock">
+        UPDATE PRODUCT_BASE_INFO 
+        SET INVENTORY = INVENTORY - #{quantity},
+            UPDATE_TIME = #{updateTime, jdbcType=BIGINT},
+            VERSION = VERSION + 1
+        WHERE ID = #{productId}
+          AND TENANT_ID = #{tenantId}
+          AND INVENTORY >= #{quantity}
+          AND DELETED = 0
+    </update>
+
+    <!-- 批量预留库存 -->
+    <insert id="reserveStockBatch">
+        <foreach collection="productInventories" item="item" separator=";">
+            INSERT INTO PRODUCT_INVENTORY_RESERVATION (
+                ID,
+                ORDER_ID,
+                PRODUCT_ID,
+                TENANT_ID,
+                RESERVED_QUANTITY,
+                STATUS,
+                CREATE_TIME,
+                VERSION
+            ) VALUES (
+                #{item.id},
+                #{orderId},
+                #{item.productId},
+                #{tenantId},
+                #{item.quantity},
+                'RESERVED',
+                #{createTime, jdbcType=BIGINT},
+                1
+            )
+        </foreach>
+    </insert>
+
+    <!-- 批量释放预留库存 -->
+    <update id="releaseReservedStockBatch">
+        <foreach collection="productInventories" item="item" separator=";">
+            UPDATE PRODUCT_INVENTORY_RESERVATION 
+            SET STATUS = 'RELEASED',
+                UPDATE_TIME = #{updateTime, jdbcType=BIGINT}
+            WHERE PRODUCT_ID = #{item.productId}
+              AND TENANT_ID = #{tenantId}
+              AND ORDER_ID = #{orderId}
+              AND STATUS = 'RESERVED'
+              AND DELETED = 0
+        </foreach>
+    </update>
+
+    <!-- 批量扣减实际库存 -->
+    <update id="deductStockBatch">
+        <foreach collection="productInventories" item="item" separator=";">
+            UPDATE PRODUCT_BASE_INFO 
+            SET INVENTORY = INVENTORY - #{item.quantity},
+                UPDATE_TIME = #{updateTime, jdbcType=BIGINT},
+                VERSION = VERSION + 1
+            WHERE ID = #{item.productId}
+              AND TENANT_ID = #{tenantId}
+              AND INVENTORY >= #{item.quantity}
+              AND DELETED = 0
+        </foreach>
+    </update>
+
+</mapper>

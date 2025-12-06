@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付页面</title>
+    <script src="/static/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .payment-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .payment-header {
+            margin-bottom: 30px;
+        }
+        
+        .payment-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .payment-subtitle {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .amount-section {
+            margin-bottom: 30px;
+        }
+        
+        .amount {
+            font-size: 48px;
+            font-weight: 700;
+            color: #ff6b6b;
+            margin-bottom: 5px;
+        }
+        
+        .currency {
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .payment-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .custom-params {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .custom-param-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .custom-param-label {
+            color: #666;
+        }
+        
+        .custom-param-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .payment-actions {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            border: 2px solid #e9ecef;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .countdown {
+            font-size: 14px;
+            color: #999;
+            margin-top: 15px;
+        }
+        
+        .status-section {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 480px) {
+            .payment-container {
+                padding: 20px;
+            }
+            
+            .amount {
+                font-size: 36px;
+            }
+            
+            .payment-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-container">
+        <div class="payment-header">
+            <div class="payment-title">订单支付</div>
+            <div class="payment-subtitle">请选择支付方式完成支付</div>
+        </div>
+        
+        <div class="amount-section">
+            <div class="amount" th:text="${'¥' + orderInfo.amount}">¥0.00</div>
+            <div class="currency" th:text="${orderInfo.currency}">CNY</div>
+        </div>
+        
+        <!-- 二维码显示区域，紧跟在金额下方 -->
+        <div class="qr-section" style="margin-top: 20px; text-align: center;">
+            <div class="qr-code" id="qrCode" style="width: 200px; height: 200px; margin: 0 auto 20px; border: 2px solid #f0f0f0; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+                <div class="loading" style="display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            </div>
+            <div class="qr-tip" style="font-size: 14px; color: #666; margin-bottom: 20px;">请使用手机扫描二维码完成支付</div>
+        </div>
+        
+        <div class="payment-info">
+            <div class="info-item">
+                <span class="info-label">订单号：</span>
+                <span class="info-value" th:text="${orderInfo.orderNo}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">商户订单号：</span>
+                <span class="info-value" th:text="${orderInfo.merchantOrderNo}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">商品：</span>
+                <span class="info-value" th:text="${orderInfo.subject}">-</span>
+            </div>
+            <div class="info-item" th:if="${orderInfo.description}">
+                <span class="info-label">描述：</span>
+                <span class="info-value" th:text="${orderInfo.description}">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">状态：</span>
+                <span class="info-value" th:text="${orderInfo.status == 'WAITING' ? '等待支付' : orderInfo.status}">等待支付</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">创建时间：</span>
+                <span class="info-value" th:text="${#dates.format(new java.util.Date(orderInfo.createTime), 'yyyy-MM-dd HH:mm:ss')}">-</span>
+            </div>
+            
+            <!-- 自定义参数 -->
+            <div th:if="${orderInfo.customParams != null and !#maps.isEmpty(orderInfo.customParams)}" class="custom-params">
+                <div class="custom-param-item" th:each="entry : ${orderInfo.customParams}">
+                    <span class="custom-param-label" th:text="${entry.key + '：'}">参数：</span>
+                    <span class="custom-param-value" th:text="${entry.value}">值</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-section" id="statusSection"></div>
+        <div class="countdown" id="countdown"></div>
+    </div>
+
+    <script th:inline="javascript">
+        // 获取Thymeleaf变量
+        const orderInfo = /*[[${orderInfo}]]*/ {};
+        const ticket = /*[[${ticket}]]*/ '';
+        const expireTime = /*[[${orderInfo.expireTime}]]*/ 0;
+        const qrCodeContent = /*[[${qrCodeContent}]]*/ '';
+        
+        // 生成二维码
+        function generateQRCode() {
+            if (!qrCodeContent) {
+                console.error('二维码内容为空');
+                return;
+            }
+            // 使用QRCode.js生成二维码
+            const qrCodeElement = document.getElementById('qrCode');
+            qrCodeElement.innerHTML = '';
+            new QRCode(qrCodeElement, {
+                text: qrCodeContent,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+        
+        // 开始倒计时
+        function startCountdown() {
+            let timeLeft = Math.max(0, Math.floor((expireTime - Date.now()) / 1000));
+            
+            function updateCountdown() {
+                if (timeLeft <= 0) {
+                    document.getElementById('countdown').textContent = '订单已过期';
+                    showStatus('订单已过期，请重新下单', 'error');
+                    return;
+                }
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('countdown').textContent = 
+                    `剩余时间: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                timeLeft--;
+                setTimeout(updateCountdown, 1000);
+            }
+            
+            updateCountdown();
+        }
+        
+        // 显示状态信息
+        function showStatus(message, type) {
+            const statusSection = document.getElementById('statusSection');
+            statusSection.textContent = message;
+            statusSection.className = `status-section status-${type}`;
+            statusSection.style.display = 'block';
+        }
+        
+        // 检查支付状态
+        function checkPaymentStatus() {
+            if (!orderInfo.orderNo) {
+                showStatus('订单信息错误', 'error');
+                return;
+            }
+            
+            // 查询支付状态
+            fetch(`/api/payment/status?orderNo=${orderInfo.orderNo}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const status = data.data.status;
+                        document.getElementById('status').textContent = getStatusText(status);
+                        
+                        if (status === 'SUCCESS') {
+                            showStatus('支付成功！正在跳转...', 'success');
+                            // 跳转到成功页面
+                            setTimeout(() => {
+                                const returnUrl = data.data.returnUrl;
+                                const orderNo = data.data.orderNo;
+                                let successUrl = `/success?orderNo=${orderNo}`;
+                                if (returnUrl) {
+                                    successUrl += `&returnUrl=${encodeURIComponent(returnUrl)}`;
+                                }
+                                window.location.href = successUrl;
+                            }, 2000);
+                        } else if (status === 'WAITING') {
+                            showStatus('等待支付中...', 'success');
+                        } else {
+                            showStatus(`当前状态: ${getStatusText(status)}`, 'error');
+                        }
+                    } else {
+                        showStatus('查询失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('查询支付状态失败:', error);
+                    showStatus('查询失败，请稍后重试', 'error');
+                });
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'WAITING': '等待支付',
+                'PROCESSING': '处理中',
+                'SUCCESS': '支付成功',
+                'FAILED': '支付失败',
+                'CLOSED': '已关闭',
+                'REFUNDED': '已退款'
+            };
+            return statusMap[status] || '未知状态';
+        }
+        
+        // 页面加载完成后开始倒计时
+        document.addEventListener('DOMContentLoaded', function() {
+            generateQRCode();
+            startCountdown();
+        });
+    </script>
+</body>
+</html> 

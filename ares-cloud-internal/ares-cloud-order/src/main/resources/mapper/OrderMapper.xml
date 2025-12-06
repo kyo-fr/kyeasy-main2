@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ares.cloud.order.infrastructure.persistence.mapper.OrderMapper">
+
+    <!-- 骑士统计结果映射 -->
+    <resultMap id="KnightStatisticsResultMap" type="com.ares.cloud.order.infrastructure.persistence.entity.KnightStatisticsResult">
+        <result column="income" property="income" jdbcType="BIGINT"/>
+        <result column="order_count" property="orderCount" jdbcType="INTEGER"/>
+        <result column="overdue_order_count" property="overdueOrderCount" jdbcType="INTEGER"/>
+        <result column="overdue_total_seconds" property="overdueTotalSeconds" jdbcType="BIGINT"/>
+    </resultMap>
+    
+    <!-- 按支付渠道分组统计结果映射 -->
+    <resultMap id="PaymentChannelStatisticsResultMap" type="com.ares.cloud.order.infrastructure.persistence.entity.PaymentChannelStatisticsResult">
+        <result column="channel_id" property="channelId" jdbcType="VARCHAR"/>
+        <result column="amount" property="amount" jdbcType="BIGINT"/>
+        <result column="order_count" property="orderCount" jdbcType="INTEGER"/>
+    </resultMap>
+    
+    <!-- 根据骑士ID和时间范围统计骑士配送数据 -->
+    <select id="getKnightStatistics" resultMap="KnightStatisticsResultMap">
+        SELECT 
+            -- 收入：配送完成订单的总金额
+            COALESCE(SUM(o.total_amount), 0) as income,
+            -- 订单数量：配送完成的订单数
+            COALESCE(COUNT(*), 0) as order_count,
+            -- 超时订单数量：配送时间超过预期时间的订单数
+            COALESCE(SUM(CASE 
+                WHEN o.delivery_time IS NOT NULL 
+                     AND o.finish_time IS NOT NULL 
+                     AND o.finish_time > o.delivery_time 
+                THEN 1 
+                ELSE 0 
+            END), 0) as overdue_order_count,
+            -- 超时总时长（秒）：所有超时订单的超时时长总和
+            COALESCE(SUM(CASE 
+                WHEN o.delivery_time IS NOT NULL 
+                     AND o.finish_time IS NOT NULL 
+                     AND o.finish_time > o.delivery_time 
+                THEN (o.finish_time - o.delivery_time) / 1000 
+                ELSE 0 
+            END), 0) as overdue_total_seconds
+        FROM orders o
+        WHERE o.rider_id = #{riderId} 
+          AND o.deleted = 0
+          AND o.delivery_status = 6
+        <if test="startTime != null">
+            AND o.finish_time >= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND o.finish_time &lt;= #{endTime}
+        </if>
+        <if test="paymentRegion != null and paymentRegion != ''">
+            AND o.currency = #{paymentRegion}
+        </if>
+    </select>
+    
+    <!-- 根据骑士ID和时间范围统计按支付渠道分组的数据 -->
+    <select id="getPaymentChannelStatistics" resultMap="PaymentChannelStatisticsResultMap">
+        SELECT 
+            op.channel_id,
+            COALESCE(SUM(op.amount), 0) as amount,
+            COALESCE(COUNT(DISTINCT op.order_id), 0) as order_count
+        FROM order_payments op
+        INNER JOIN orders o ON op.order_id = o.id AND o.deleted = 0
+        WHERE o.rider_id = #{riderId}
+          AND o.delivery_status = 6
+          AND op.deleted = 0
+          AND op.status = 1
+        <if test="startTime != null">
+            AND o.finish_time >= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND o.finish_time &lt;= #{endTime}
+        </if>
+        <if test="paymentRegion != null and paymentRegion != ''">
+            AND o.currency = #{paymentRegion}
+        </if>
+        GROUP BY op.channel_id
+        ORDER BY amount DESC
+    </select>
+
+</mapper>
+

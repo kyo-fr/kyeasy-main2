@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ares.cloud.pay.infrastructure.persistence.mapper.MerchantMapper">
+
+    <!-- 商户统计结果映射 -->
+    <resultMap id="MerchantStatisticsResultMap" type="com.ares.cloud.pay.infrastructure.persistence.entity.MerchantStatisticsResult">
+        <result column="total_fee_expenditure" property="totalFeeExpenditure" jdbcType="BIGINT"/>
+        <result column="total_fee_transaction_count" property="totalFeeTransactionCount" jdbcType="INTEGER"/>
+        <result column="merchant_fee" property="merchantFee" jdbcType="BIGINT"/>
+        <result column="merchant_fee_transaction_count" property="merchantFeeTransactionCount" jdbcType="INTEGER"/>
+        
+        <!-- 收入类 -->
+        <result column="merchant_collection_income" property="merchantCollectionIncome" jdbcType="BIGINT"/>
+        <result column="merchant_collection_transaction_count" property="merchantCollectionTransactionCount" jdbcType="INTEGER"/>
+        <result column="merchant_collection_fee" property="merchantCollectionFee" jdbcType="BIGINT"/>
+        <result column="merchant_purchase_income" property="merchantPurchaseIncome" jdbcType="BIGINT"/>
+        <result column="merchant_purchase_transaction_count" property="merchantPurchaseTransactionCount" jdbcType="INTEGER"/>
+        <result column="merchant_purchase_fee" property="merchantPurchaseFee" jdbcType="BIGINT"/>
+        
+        <!-- 支出类 -->
+        <result column="activity_gift_expenditure" property="activityGiftExpenditure" jdbcType="BIGINT"/>
+        <result column="activity_gift_transaction_count" property="activityGiftTransactionCount" jdbcType="INTEGER"/>
+        <result column="activity_gift_fee" property="activityGiftFee" jdbcType="BIGINT"/>
+        <result column="discount_grant_expenditure" property="discountGrantExpenditure" jdbcType="BIGINT"/>
+        <result column="discount_grant_transaction_count" property="discountGrantTransactionCount" jdbcType="INTEGER"/>
+        <result column="discount_grant_fee" property="discountGrantFee" jdbcType="BIGINT"/>
+        <result column="price_grant_expenditure" property="priceGrantExpenditure" jdbcType="BIGINT"/>
+        <result column="price_grant_transaction_count" property="priceGrantTransactionCount" jdbcType="INTEGER"/>
+        <result column="price_grant_fee" property="priceGrantFee" jdbcType="BIGINT"/>
+        <result column="merchant_sell_expenditure" property="merchantSellExpenditure" jdbcType="BIGINT"/>
+        <result column="merchant_sell_transaction_count" property="merchantSellTransactionCount" jdbcType="INTEGER"/>
+        <result column="merchant_sell_fee" property="merchantSellFee" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <!-- 根据商户ID和时间范围统计商户交易数据 -->
+    <select id="getMerchantStatistics" resultMap="MerchantStatisticsResultMap">
+        SELECT 
+            -- 手续费总支出：所有手续费的总和
+            COALESCE(SUM(af.fee_amount), 0) as total_fee_expenditure,
+            -- 手续费总支出对应的交易数量：所有有手续费的交易数量
+            COUNT(DISTINCT CASE WHEN af.fee_amount > 0 THEN af.transaction_id ELSE NULL END) as total_fee_transaction_count,
+            
+            -- 商户手续费：商户相关交易的手续费总和
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' THEN af.fee_amount ELSE 0 END), 0) as merchant_fee,
+            -- 商户手续费对应的交易数量
+            COUNT(DISTINCT CASE WHEN af.flow_type = 'OUT' AND af.fee_amount > 0 THEN af.transaction_id ELSE NULL END) as merchant_fee_transaction_count,
+            
+            -- ==================== 收入类 ====================
+            
+            -- 商户收款收入（MERCHANT_COLLECTION）
+            COALESCE(SUM(CASE WHEN af.flow_type = 'IN' AND af.transaction_type = 'MERCHANT_COLLECTION' THEN af.amount ELSE 0 END), 0) as merchant_collection_income,
+            COUNT(DISTINCT CASE WHEN af.flow_type = 'IN' AND af.transaction_type = 'MERCHANT_COLLECTION' THEN af.transaction_id ELSE NULL END) as merchant_collection_transaction_count,
+            COALESCE(SUM(CASE WHEN af.flow_type = 'IN' AND af.transaction_type = 'MERCHANT_COLLECTION' THEN af.fee_amount ELSE 0 END), 0) as merchant_collection_fee,
+            
+            -- 系统购买收入（MERCHANT_PURCHASE）
+            COALESCE(SUM(CASE WHEN af.flow_type = 'IN' AND af.transaction_type = 'MERCHANT_PURCHASE' THEN af.amount ELSE 0 END), 0) as merchant_purchase_income,
+            COUNT(DISTINCT CASE WHEN af.flow_type = 'IN' AND af.transaction_type = 'MERCHANT_PURCHASE' THEN af.transaction_id ELSE NULL END) as merchant_purchase_transaction_count,
+            COALESCE(SUM(CASE WHEN af.flow_type = 'IN' AND af.transaction_type = 'MERCHANT_PURCHASE' THEN af.fee_amount ELSE 0 END), 0) as merchant_purchase_fee,
+            
+            -- ==================== 支出类 ====================
+            
+            -- 活动赠送支出（MERCHANT_ACTIVITY_GIFT）
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_ACTIVITY_GIFT' THEN af.amount ELSE 0 END), 0) as activity_gift_expenditure,
+            COUNT(DISTINCT CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_ACTIVITY_GIFT' THEN af.transaction_id ELSE NULL END) as activity_gift_transaction_count,
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_ACTIVITY_GIFT' THEN af.fee_amount ELSE 0 END), 0) as activity_gift_fee,
+            
+            -- 优惠减免支出（MERCHANT_DISCOUNT_GRANT）
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_DISCOUNT_GRANT' THEN af.amount ELSE 0 END), 0) as discount_grant_expenditure,
+            COUNT(DISTINCT CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_DISCOUNT_GRANT' THEN af.transaction_id ELSE NULL END) as discount_grant_transaction_count,
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_DISCOUNT_GRANT' THEN af.fee_amount ELSE 0 END), 0) as discount_grant_fee,
+            
+            -- 减价支出（MERCHANT_PRICE_GRANT）
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_PRICE_GRANT' THEN af.amount ELSE 0 END), 0) as price_grant_expenditure,
+            COUNT(DISTINCT CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_PRICE_GRANT' THEN af.transaction_id ELSE NULL END) as price_grant_transaction_count,
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_PRICE_GRANT' THEN af.fee_amount ELSE 0 END), 0) as price_grant_fee,
+            
+            -- 出售给系统支出（MERCHANT_SELL）
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_SELL' THEN af.amount ELSE 0 END), 0) as merchant_sell_expenditure,
+            COUNT(DISTINCT CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_SELL' THEN af.transaction_id ELSE NULL END) as merchant_sell_transaction_count,
+            COALESCE(SUM(CASE WHEN af.flow_type = 'OUT' AND af.transaction_type = 'MERCHANT_SELL' THEN af.fee_amount ELSE 0 END), 0) as merchant_sell_fee
+            
+        FROM payment_account_flow af
+        WHERE af.account_id = #{merchantId} AND af.deleted = 0
+        <if test="startTime != null">
+            AND af.create_time >= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND af.create_time &lt;= #{endTime}
+        </if>
+        <if test="paymentRegion != null and paymentRegion != ''">
+            AND af.currency = #{paymentRegion}
+        </if>
+    </select>
+    
+    <!-- 按交易类型分组统计结果映射 -->
+    <resultMap id="TransactionTypeStatisticsResultMap" type="com.ares.cloud.pay.infrastructure.persistence.entity.TransactionTypeStatisticsResult">
+        <result column="transaction_type" property="transactionType" jdbcType="VARCHAR"/>
+        <result column="flow_type" property="flowType" jdbcType="VARCHAR"/>
+        <result column="amount" property="amount" jdbcType="BIGINT"/>
+        <result column="transaction_count" property="transactionCount" jdbcType="INTEGER"/>
+        <result column="fee_amount" property="feeAmount" jdbcType="BIGINT"/>
+        <result column="total_fee_rate" property="totalFeeRate" jdbcType="BIGINT"/>
+    </resultMap>
+    
+    <!-- 根据商户ID和时间范围统计按交易类型分组的数据 -->
+    <select id="getMerchantTransactionTypeStatistics" resultMap="TransactionTypeStatisticsResultMap">
+        SELECT 
+            transaction_type,
+            flow_type,
+            COALESCE(SUM(amount), 0) as amount,
+            COALESCE(COUNT(*), 0) as transaction_count,
+            COALESCE(SUM(fee_amount), 0) as fee_amount,
+            COALESCE(SUM(fee_rate), 0) as total_fee_rate
+        FROM payment_account_flow 
+        WHERE account_id = #{merchantId} AND deleted = 0
+        <if test="startTime != null">
+            AND create_time >= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND create_time &lt;= #{endTime}
+        </if>
+        <if test="paymentRegion != null and paymentRegion != ''">
+            AND currency = #{paymentRegion}
+        </if>
+        GROUP BY transaction_type, flow_type
+        ORDER BY flow_type DESC, transaction_type
+    </select>
+
+</mapper>
+

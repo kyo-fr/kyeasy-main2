@@ -1,0 +1,36 @@
+server:
+  port: 8400
+
+spring:
+  application:
+    name: base-service # 应用名称，用于服务注册
+  servlet:
+    multipart:
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+  profiles:
+    active: dev
+
+# 可以将更多自定义配置放入 Nacos 配置中心
+springdoc:
+  api-docs:
+    path: /v3/api-docs  # 统一文档路径
+
+# SSL 配置
+oracle:
+  net:
+    ssl_server_dn_match: true
+
+
+apple:
+  maps:
+    team-id: 3K48PA624M
+    key-id: DNRWXXA4L2
+    private-key-path: AuthKey_DNRWXXA4L2.p8  # 文件在 resources 下
+    origin: "https://pro.kyeasy.com"
+    expire-seconds: 3600   # token 有效期（秒）
+
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

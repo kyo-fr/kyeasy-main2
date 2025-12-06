@@ -1,0 +1,17 @@
+server:
+  port: 8100
+  jetty:
+    max-http-form-post-size: 10MB
+  tomcat:
+    max-http-form-post-size: 10MB
+spring:
+  application:
+    name: ares-cloud-auth-center
+  profiles:
+    active: dev
+
+
+# 可以将更多自定义配置放入 Nacos 配置中心
+springdoc:
+  api-docs:
+    path: /v3/api-docs  # 统一文档路径

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.ares.cloud</groupId>
+        <artifactId>ares-cloud</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <packaging>pom</packaging>
+    <modules>
+        <module>ares-cloud-payment-base</module>
+        <module>ares-cloud-payment-gateway</module>
+        <module>ares-cloud-pay-center</module>
+    </modules>
+    <artifactId>ares-cloud-pay</artifactId>
+    <description>支付模块</description>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.ares.cloud</groupId>
+                <artifactId>ares-framework-dependencies</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.ares.cloud</groupId>
+                <artifactId>ares-cloud-database-resources</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

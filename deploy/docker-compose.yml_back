@@ -1,0 +1,74 @@
+version: '3'
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql_ares
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456           # MySQL root 用户密码
+      TZ: Asia/Shanghai                     # 设置时区
+      MYSQL_DATABASE: nacos                 # 创建的数据库名称
+    ports:
+      - "3306:3306"                         # 将 MySQL 的 3306 端口映射到宿主机
+    volumes:
+      - ares_mysql_data:/var/lib/mysql         # 数据持久化目录
+      - ./mysql-init:/docker-entrypoint-initdb.d/ # 启动时初始化 SQL 脚本的挂载目录
+
+    restart: always                         # 容器崩溃时自动重启
+    networks:
+      - ares_network
+  redis:
+    image: redis:latest
+    container_name: redis_ares
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - ares_redis_data:/data
+      - ./configs/redis.conf:/usr/local/etc/redis/redis.conf
+      - ares_redis_logs:/logs
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    networks:
+      - ares_network
+  nacos:
+    image: nacos/nacos-server:v2.3.0-slim
+    container_name: nacos_server
+    environment:
+      - MODE=standalone                     # 单机模式
+      - SPRING_DATASOURCE_PLATFORM=mysql    # 使用 MySQL 作为数据源
+      - MYSQL_SERVICE_HOST=mysql            # MySQL 容器的服务名
+      - MYSQL_SERVICE_PORT=3306             # MySQL 服务端口
+      - MYSQL_SERVICE_DB_NAME=nacos         # 数据库名称
+      - MYSQL_SERVICE_USER=root             # 数据库用户名
+      - MYSQL_SERVICE_PASSWORD=123456       # 数据库密码
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true # 数据库连接参数
+      - PREFER_HOST_MODE=hostname
+      - JVM_XMS=256m                        # 设置 JVM 最小堆内存
+      - JVM_XMX=512m                        # 设置 JVM 最大堆内存
+      - JVM_XMN=256m                        # 设置 JVM 年轻代堆内存
+      - NACOS_AUTH_ENABLE=true
+      - NACOS_AUTH_IDENTITY_KEY=2222
+      - NACOS_AUTH_IDENTITY_VALUE=2xxx
+      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
+    ports:
+      - "18848:8848"                         # Nacos 控制台端口
+      - "19848:9848"                         # Nacos gRPC 端口
+#      - "19849:9849"                         # Nacos Raft 端口
+    volumes:
+      - ares_nacos_data:/home/nacos/data  # Nacos 数据持久化
+      - ares_nacos_logs:/home/nacos/logs  # Nacos 日志持久化
+    depends_on:
+      - mysql                               # 依赖 MySQL 容器
+    restart: always
+    networks:
+      - ares_network
+
+networks:
+  ares_network:
+    driver: bridge
+# 数据卷
+volumes:
+  ares_mysql_data:                               # 数据卷定义
+  ares_redis_data:
+  ares_redis_logs:
+  ares_nacos_data:
+  ares_nacos_logs:

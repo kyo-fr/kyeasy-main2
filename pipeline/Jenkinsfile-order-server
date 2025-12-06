@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'APP_NAME', defaultValue: 'ares-cloud-order', description: '应用名称')
+        string(name: 'MODEL_PATH', defaultValue: 'ares-cloud-internal/ares-cloud-order', description: '模块相对根目录的路径')
+    }
+    environment {
+        // 定义全局变量
+        JDK_HOME = tool name: 'JDK17', type: 'jdk'
+        JAR_NAME = "${params.APP_NAME}.jar"  // 打包后的JAR文件名
+        DEPLOY_PATH = '/home/opc/springcloud/app/' // 本地部署的路径
+        LOG_DIR = '/home/opc/springcloud/logs/'  // 日志存放目录
+        LOG_FILE = "${LOG_DIR}${params.APP_NAME}.log"  // 日志文件名
+    }
+
+    stages {
+        stage('Verify Java Version') {
+            steps {
+                sh 'java -version'
+            }
+        }
+        stage('Build') {
+            steps {
+                // 使用 Maven 构建项目
+                sh """
+                /opt/apache-maven-3.9.9/bin/mvn clean package -pl ${params.MODEL_PATH} -am -DskipTests
+                """
+            }
+        }
+        stage('Deploy') {
+            steps {
+                script {
+                    // 检查并停止正在运行的 JAR 应用
+                    sh """
+                    PID=\$(ps -ef | grep "${DEPLOY_PATH}${JAR_NAME}" | grep -v grep | awk '{print \$2}')
+                    if [ -n "\$PID" ]; then
+                      echo "Stopping existing application (PID: \$PID)"
+                      sudo kill -9 \$PID
+                    else
+                      echo "No application is running."
+                    fi
+                    """
+                    // 删除旧的JAR文件并复制新的JAR文件到部署目录
+                    sh """
+                    sudo rm -f ${DEPLOY_PATH}${JAR_NAME}
+                    sudo cp ${params.MODEL_PATH}/target/*.jar ${DEPLOY_PATH}${JAR_NAME}
+                    """
+
+                    // 启动新的服务并将日志输出到指定文件
+                    sh """
+                    sudo sh -c "java -jar ${DEPLOY_PATH}${JAR_NAME} --spring.profiles.active=test > ${LOG_FILE} 2>&1 &"
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment Successful!'
+        }
+        failure {
+            echo 'Deployment Failed!'
+        }
+    }
+}

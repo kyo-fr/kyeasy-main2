@@ -1,0 +1,48 @@
+server:
+  port: 7100
+  jetty:
+    max-http-form-post-size: 10MB
+  tomcat:
+    max-http-form-post-size: 10MB
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: ares-cloud-gateway
+  profiles:
+    active: dev   # 根据不同环境切换 profile，值可以为 dev, prod, staging 等
+
+  cloud:
+    gateway:
+      forwarded:
+        enabled: true  # 开启后会识别并透传 X-Forwarded-* 头
+
+#  cloud:
+#    gateway:
+#      global-cors:
+#        cors-configurations:
+#          '[/**]':
+#            allowedOrigins:
+#              - "http://localhost:8000"
+#            allowCredentials: true
+#            allowedMethods:
+#              - GET
+#              - POST
+#              - PUT
+#              - DELETE
+#              - OPTIONS
+#            allowedHeaders:
+#              - Authorization
+#              - Content-Type
+#              - Accept
+#              - X-Requested-With
+#              - timeout
+#              - Origin
+#            exposedHeaders:
+#              - Authorization
+#            maxAge: 3600
+
+# 如果需要允许携带认证信息，使用具体域名替代"*"
+#            allowedOrigins: 
+#              - "http://your-frontend-domain.com"
+#            allowCredentials: true

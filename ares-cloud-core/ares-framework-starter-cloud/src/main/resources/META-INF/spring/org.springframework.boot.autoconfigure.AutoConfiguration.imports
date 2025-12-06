@@ -1,0 +1,2 @@
+org.ares.cloud.config.CloudAppFilterConfig
+org.ares.cloud.feign.config.FeignConfig

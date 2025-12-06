@@ -1,0 +1,57 @@
+server:
+  port: 8081
+
+spring:
+  profiles:
+    active: dev
+  application:
+    name: my-service-b # 应用名称，用于服务注册
+  config:
+    import: optional:nacos:${spring.application.name}.yaml?refreshEnabled=true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:18848 # Nacos 服务地址
+        username: nacos
+        password: nacos
+      config:
+        server-addr: localhost:18848
+        namespace: public
+        username: nacos
+        password: nacos
+        file-extension: yaml
+        group: DEFAULT_GROUP    # 也可以使用 group 分组不同环境配置
+        refresh-enabled: true
+    loadbalancer:
+      retry:
+        enabled: true
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
+#resilience4j:
+#  circuitbreaker:
+#    configs:
+#      default:
+#        register-health-indicator: true
+#        sliding-window-type: COUNT_BASED
+#        sliding-window-size: 10
+#        failure-rate-threshold: 50
+#        wait-duration-in-open-state: 10s
+#        permitted-number-of-calls-in-half-open-state: 3
+#        slow-call-rate-threshold: 100
+#        slow-call-duration-threshold: 2s
+#        minimum-number-of-calls: 5
+#        writable-stack-trace-enabled: false
+#    instances:
+#      myServiceClient:
+#        base-config: default
+
+
+
+# 可以将更多自定义配置放入 Nacos 配置中心
+springdoc:
+  api-docs:
+    path: /v3/api-docs  # 统一文档路径
+
+

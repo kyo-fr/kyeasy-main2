@@ -1,0 +1,276 @@
+server:
+  port: 9200
+
+spring:
+  application:
+    name: ares-order-service # 应用名称，用于服务注册
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@//localhost:1521/XE
+    username: your_username
+    password: your_password
+  cloud:
+    # ==================== 函数定义 ====================
+    # 【业务处理消费者组】4 个消费者 - OrderEventStreamFunctions
+    #   1. orderCreatedConsumer - 订单创建后库存变动通知
+    #   2. orderCancelledConsumer - 订单取消后库存变动通知
+    #   3. orderPaidInvoiceConsumer - 订单支付后生成发票
+    #   4. orderPaidGiftConsumer - 订单支付后赠送礼物点
+    # 【通知处理消费者组】6 个消费者 - OrderEventNotificationHandler
+    # 总计：10 个消费者 + 2 个生产者
+    function:
+      definition: orderCreatedConsumer;orderCancelledConsumer;orderPaidInvoiceConsumer;orderPaidGiftConsumer;orderCreatedNotificationConsumer;orderPaidNotificationConsumer;orderRefundedNotificationConsumer;orderStatusNotificationConsumer;deliveryStartedNotificationConsumer;deliveryCompletedNotificationConsumer
+    
+    stream:
+      rabbit:
+        bindings:
+          # ==================== 【业务处理消费者组】订单领域消费者配置 ====================
+          # 订单创建消费者 - 库存变动通知（打印日志）
+          orderCreatedConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: order.created
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 10
+              max-concurrency: 5
+              queue-name-group-only: true
+          
+          # 订单取消消费者 - 库存变动通知（打印日志）
+          orderCancelledConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: order.status
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 10
+              max-concurrency: 5
+              queue-name-group-only: true
+          
+          # 订单支付 - 发票消费组
+          orderPaidInvoiceConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: order.paid
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 5                          # 发票生成较慢
+              max-concurrency: 3
+              queue-name-group-only: true
+          
+          # 订单支付 - 礼物点消费组
+          orderPaidGiftConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: order.paid
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 10
+              max-concurrency: 5
+              queue-name-group-only: true
+          
+          # ==================== 【通知处理消费者组】订单领域通知消费者配置 ====================
+          # 订单创建通知消费者（通知商户）
+          orderCreatedNotificationConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: order.created
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 20                         # 通知处理快，增加预取
+              max-concurrency: 10                  # 提高并发
+              queue-name-group-only: true
+          
+          # 订单支付通知消费者（通知商户）
+          orderPaidNotificationConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: order.paid
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 20
+              max-concurrency: 10
+              queue-name-group-only: true
+          
+          # 订单退款通知消费者（通知商户）
+          orderRefundedNotificationConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: order.refunded
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 20
+              max-concurrency: 10
+              queue-name-group-only: true
+          
+          # 订单状态变更通知消费者（根据 OrderStatus 自动生成通知）
+          orderStatusNotificationConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: order.status
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 20
+              max-concurrency: 10
+              queue-name-group-only: true
+          
+          # ==================== 【通知处理消费者组】配送领域通知消费者配置 ====================
+          # 配送开始通知消费者（通知商户）
+          deliveryStartedNotificationConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: delivery.started
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 20
+              max-concurrency: 10
+              queue-name-group-only: true
+          
+          # 配送完成通知消费者（通知商户）
+          deliveryCompletedNotificationConsumer-in-0:
+            consumer:
+              exchange-type: direct
+              binding-routing-key: delivery.completed
+              acknowledge-mode: MANUAL
+              auto-bind-dlq: true
+              prefetch: 20
+              max-concurrency: 10
+              queue-name-group-only: true
+          
+          # ==================== 生产者配置 ====================
+          # 订单事件生产者（动态路由）
+          orderEvents-out-0:
+            producer:
+              exchange-type: direct
+              routing-key-expression: "headers['routingKey']"  # 从消息头获取路由键
+              queue-name-group-only: true
+          
+          # 配送事件生产者（动态路由）
+          deliveryEvents-out-0:
+            producer:
+              exchange-type: direct
+              routing-key-expression: "headers['routingKey']"  # 从消息头获取路由键
+              queue-name-group-only: true
+      
+      # ==================== 统一的 Bindings 配置 ====================
+      # 默认消费者配置
+      default:
+        consumer:
+          max-attempts: 3                               # 最大重试次数
+      
+      bindings:
+        # ==================== 【业务处理消费者组】订单领域消费者绑定 ====================
+        # 订单创建 - 库存变动通知
+        orderCreatedConsumer-in-0:
+          destination: order-events-exchange
+          group: order-inventory-group                  # 库存通知消费者组
+          content-type: application/json
+          consumer:
+            max-attempts: 3                             # 消费者级别配置
+        
+        # 订单取消 - 库存变动通知
+        orderCancelledConsumer-in-0:
+          destination: order-events-exchange
+          group: order-inventory-group                  # 库存通知消费者组
+          content-type: application/json
+          consumer:
+            max-attempts: 3
+        
+        # 订单支付 - 发票消费组
+        orderPaidInvoiceConsumer-in-0:
+          destination: order-events-exchange
+          group: order-invoice-group                    # 发票消费者组
+          content-type: application/json
+          consumer:
+            max-attempts: 3
+        
+        # 订单支付 - 礼物点消费组
+        orderPaidGiftConsumer-in-0:
+          destination: order-events-exchange
+          group: order-gift-group                       # 礼物点消费者组
+          content-type: application/json
+          consumer:
+            max-attempts: 3
+        
+        # ==================== 【通知处理消费者组】订单领域通知消费者绑定 ====================
+        orderCreatedNotificationConsumer-in-0:
+          destination: order-events-exchange
+          group: order-notification-group               # 通知处理消费者组
+          content-type: application/json
+        
+        orderPaidNotificationConsumer-in-0:
+          destination: order-events-exchange
+          group: order-notification-group               # 通知处理消费者组
+          content-type: application/json
+        
+        orderRefundedNotificationConsumer-in-0:
+          destination: order-events-exchange
+          group: order-notification-group               # 通知处理消费者组
+          content-type: application/json
+        
+        orderStatusNotificationConsumer-in-0:
+          destination: order-events-exchange
+          group: order-notification-group               # 通知处理消费者组
+          content-type: application/json
+        
+        # ==================== 【通知处理消费者组】配送领域通知消费者绑定 ====================
+        deliveryStartedNotificationConsumer-in-0:
+          destination: delivery-events-exchange
+          group: delivery-notification-group            # 通知处理消费者组
+          content-type: application/json
+        
+        deliveryCompletedNotificationConsumer-in-0:
+          destination: delivery-events-exchange
+          group: delivery-notification-group            # 通知处理消费者组
+          content-type: application/json
+        
+        # ==================== 生产者绑定（StreamBridge 使用）====================
+        orderEvents-out-0:
+          destination: order-events-exchange
+          content-type: application/json
+        
+        deliveryEvents-out-0:
+          destination: delivery-events-exchange
+          content-type: application/json
+
+# 可以将更多自定义配置放入 Nacos 配置中心
+springdoc:
+  api-docs:
+    path: /v3/api-docs  # 统一文档路径
+
+ares:
+  oracle:
+    wallet:
+      enabled: true
+      path: oracle/wallet
+# SSL 配置
+oracle:
+  net:
+    ssl_server_dn_match: true
+
+mybatis-plus:
+  configuration:
+    jdbc-type-for-null: 'null'  # Oracle需要这个配置
+  global-config:
+    db-config:
+      id-type: INPUT  # 使用序列生成ID
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# 订单礼物点配置
+# 
+# 礼物点赠送逻辑：
+# - 只有当 PartialPayOrderCommand 或 PayOrderCommand 中的 giftPoints 字段有值且大于0时才执行赠送
+# - 无 giftPoints 或 giftPoints <= 0 时，不执行任何赠送操作
+# 
+# 购买赠送（SHOPPING）：用户支付款项转给商户
+#    - fromAccountId: userId（用户账户，来自 OrderPaidEventMessage）
+#    - toAccountId: merchantId（商户账户，来自 OrderPaidEventMessage）
+#    - amount: giftPoints（赠送金额，来自 OrderPaidEventMessage）
+#    - paymentRegion: 订单币种（从 Order.currency 获取，支持多币种）
+#    - transactionType: SHOPPING（购物交易类型）
+#    - feeBearer: 不设置（赠送不收取手续费）
+#    - 用途：购买赠送、礼物支付等

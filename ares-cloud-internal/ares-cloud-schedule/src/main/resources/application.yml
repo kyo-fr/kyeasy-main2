@@ -1,0 +1,30 @@
+server:
+  port: 8700
+
+spring:
+  application:
+    name: schedule-service # 应用名称，用于服务注册
+  profiles:
+    active: dev
+  task:
+    scheduling:
+      pool:
+        size: 2
+      shutdown:
+        await-termination: true
+        await-termination-period: 30s
+  # 禁用Redis自动配置
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+#      - org.redisson.spring.starter.RedissonAutoConfiguration
+# 可以将更多自定义配置放入 Nacos 配置中心
+springdoc:
+  api-docs:
+    path: /v3/api-docs  # 统一文档路径
+
+# SSL 配置
+oracle:
+  net:
+    ssl_server_dn_match: true

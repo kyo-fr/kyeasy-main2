@@ -1,0 +1,22 @@
+package org.ares.cloud;
+
+import org.ares.cloud.annotation.EnableAresServer;
+import org.ares.cloud.user.properties.SuperAdminProperties;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.ComponentScan;
+
+@EnableAresServer
+@EnableDiscoveryClient
+@EnableFeignClients(basePackages = "org.ares.cloud.api.base")
+@ComponentScan(basePackages = {"org.ares.cloud.**","org.ares.cloud.**"})
+@EnableConfigurationProperties(SuperAdminProperties.class)
+public class UserApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(UserApplication.class, args);
+        System.out.println("用户服务启动成功");
+
+    }
+}

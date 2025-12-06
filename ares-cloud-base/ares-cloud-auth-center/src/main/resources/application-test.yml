@@ -1,0 +1,14 @@
+spring:
+  data:
+    redis:
+      database: 1
+      host: localhost
+      port: 26369
+      password: "JSheOPAK!!d11"
+      timeout: 6000ms  # 连接超时时长（毫秒）
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:18848 # Nacos 服务地址
+        username: nacos
+        password: nacos@@admin

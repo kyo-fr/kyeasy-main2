@@ -1,0 +1,59 @@
+payment:
+  max-retry-times: 3
+  retry-interval: 60000
+  callback-secret: your-callback-secret
+  page-base-url: http://payment.example.com
+  alipay-gateway-url: https://openapi.alipay.com/gateway.do
+  wechat-gateway-url: https://api.mch.weixin.qq.com/v3
+  result-page:
+    url: ${payment.page-base-url}/payment/result
+    success-template: payment/success
+    failure-template: payment/failure
+  
+  alipay:
+    app-id: ${ALIPAY_APP_ID}
+    private-key: ${ALIPAY_PRIVATE_KEY}
+    public-key: ${ALIPAY_PUBLIC_KEY}
+    gateway-url: https://openapi.alipay.com/gateway.do
+    
+  wechat-pay:
+    app-id: ${WECHAT_APP_ID}
+    mch-id: ${WECHAT_MCH_ID}
+    private-key: ${WECHAT_PRIVATE_KEY}
+    api-v3-key: ${WECHAT_API_V3_KEY}
+    serial-number: ${WECHAT_SERIAL_NUMBER}
+    
+  braintree:
+    merchant-id: ${BRAINTREE_MERCHANT_ID}
+    public-key: ${BRAINTREE_PUBLIC_KEY}
+    private-key: ${BRAINTREE_PRIVATE_KEY}
+    environment: sandbox
+  
+  merchants:
+    merchant1:
+      merchant-id: "M001"
+      merchant-name: "测试商户1"
+      sign-key: "your-sign-key"
+      channels:
+        ALIPAY:
+          channel-id: "CH001"
+          app-id: "your-app-id"
+          merchant-code: "your-merchant-code"
+          private-key: "your-private-key"
+          public-key: "your-public-key"
+          enabled: true
+          extra-config:
+            gateway-url: "https://openapi.alipay.com/gateway.do"
+        WECHAT:
+          channel-id: "CH002"
+          app-id: "your-wechat-app-id"
+          merchant-code: "your-wechat-mch-id"
+          private-key: "your-wechat-key"
+          enabled: true 
+  
+  page:
+    base-url: http://your-domain.com/payment/page
+    templates:
+      braintree:
+        h5: payment/braintree-h5
+        pc: payment/braintree-pc 

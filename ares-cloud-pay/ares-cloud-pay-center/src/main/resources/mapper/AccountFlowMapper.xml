@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ares.cloud.pay.infrastructure.persistence.mapper.AccountFlowMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.ares.cloud.pay.infrastructure.persistence.entity.AccountFlowEntity">
+        <id column="id" property="id" jdbcType="VARCHAR"/>
+        <result column="account_id" property="accountId" jdbcType="VARCHAR"/>
+        <result column="transaction_id" property="transactionId" jdbcType="VARCHAR"/>
+        <result column="flow_type" property="flowType" jdbcType="VARCHAR"/>
+        <result column="transaction_type" property="transactionType" jdbcType="VARCHAR"/>
+        <result column="amount" property="amount" jdbcType="BIGINT"/>
+        <result column="fee_amount" property="feeAmount" jdbcType="BIGINT"/>
+        <result column="fee_rate" property="feeRate" jdbcType="INTEGER"/>
+        <result column="actual_amount" property="actualAmount" jdbcType="BIGINT"/>
+        <result column="currency" property="currency" jdbcType="VARCHAR"/>
+        <result column="scale" property="scale" jdbcType="INTEGER"/>
+        <result column="balance_before" property="balanceBefore" jdbcType="BIGINT"/>
+        <result column="balance_after" property="balanceAfter" jdbcType="BIGINT"/>
+        <result column="create_time" property="createTime" jdbcType="BIGINT"/>
+        <result column="update_time" property="updateTime" jdbcType="BIGINT"/>
+        <result column="deleted" property="deleted" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, account_id, transaction_id, flow_type, transaction_type, amount, fee_amount, fee_rate, 
+        actual_amount, currency, scale, balance_before, balance_after, 
+        create_time, update_time, deleted
+    </sql>
+
+    <!-- 账户统计结果映射 -->
+    <resultMap id="AccountStatisticsResultMap" type="com.ares.cloud.pay.infrastructure.persistence.entity.AccountStatisticsResult">
+        <result column="total" property="total" jdbcType="INTEGER"/>
+        <result column="income" property="income" jdbcType="BIGINT"/>
+        <result column="outcome" property="outcome" jdbcType="BIGINT"/>
+        <result column="shopping_payment" property="shoppingPayment" jdbcType="BIGINT"/>
+        <result column="activity_rebate_income" property="activityRebateIncome" jdbcType="BIGINT"/>
+        <result column="user_transfer_income" property="userTransferIncome" jdbcType="BIGINT"/>
+        <result column="user_transfer_expense" property="userTransferExpense" jdbcType="BIGINT"/>
+        <result column="merchant_discount_income" property="merchantDiscountIncome" jdbcType="BIGINT"/>
+        <result column="merchant_price_reduction_income" property="merchantPriceReductionIncome" jdbcType="BIGINT"/>
+        <result column="fee_expense" property="feeExpense" jdbcType="BIGINT"/>
+    </resultMap>
+    
+    <!-- 按交易类型分组统计结果映射 -->
+    <resultMap id="TransactionTypeStatisticsResultMap" type="com.ares.cloud.pay.infrastructure.persistence.entity.TransactionTypeStatisticsResult">
+        <result column="transaction_type" property="transactionType" jdbcType="VARCHAR"/>
+        <result column="flow_type" property="flowType" jdbcType="VARCHAR"/>
+        <result column="amount" property="amount" jdbcType="BIGINT"/>
+        <result column="transaction_count" property="transactionCount" jdbcType="INTEGER"/>
+        <result column="fee_amount" property="feeAmount" jdbcType="BIGINT"/>
+        <result column="total_fee_rate" property="totalFeeRate" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <!-- 根据查询条件分页查询账户流水 -->
+    <select id="findByQuery" resultMap="BaseResultMap">
+        SELECT af.* 
+        FROM payment_account_flow af
+        <where>
+            <if test="true">
+                AND af.deleted = 0
+            </if>
+            <if test="query.accountId != null and query.accountId != ''">
+                AND af.account_id = #{query.accountId}
+            </if>
+            <if test="query.transactionId != null and query.transactionId != ''">
+                AND af.transaction_id = #{query.transactionId}
+            </if>
+            <if test="query.flowType != null and query.flowType != ''">
+                AND af.flow_type = #{query.flowType}
+            </if>
+            <if test="query.transactionType != null and query.transactionType != ''">
+                AND af.transaction_type = #{query.transactionType}
+            </if>
+            <if test="query.paymentRegion != null and query.paymentRegion != ''">
+                AND af.currency = #{query.paymentRegion}
+            </if>
+            <if test="query.minAmount != null">
+                AND af.amount >= #{query.minAmount} * 100
+            </if>
+            <if test="query.maxAmount != null">
+                AND af.amount &lt;= #{query.maxAmount} * 100
+            </if>
+            <if test="query.startTime != null">
+                AND af.create_time >= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND af.create_time &lt;= #{query.endTime}
+            </if>
+        </where>
+        ORDER BY af.create_time DESC
+    </select>
+
+    <!-- 根据查询条件统计账户流水总数 -->
+    <select id="countByQuery" resultType="long">
+        SELECT COUNT(*)
+        FROM payment_account_flow af
+        <where>
+            <if test="true">
+                AND af.deleted = 0
+            </if>
+            <if test="query.accountId != null and query.accountId != ''">
+                AND af.account_id = #{query.accountId}
+            </if>
+            <if test="query.transactionId != null and query.transactionId != ''">
+                AND af.transaction_id = #{query.transactionId}
+            </if>
+            <if test="query.flowType != null and query.flowType != ''">
+                AND af.flow_type = #{query.flowType}
+            </if>
+            <if test="query.transactionType != null and query.transactionType != ''">
+                AND af.transaction_type = #{query.transactionType}
+            </if>
+            <if test="query.paymentRegion != null and query.paymentRegion != ''">
+                AND af.currency = #{query.paymentRegion}
+            </if>
+            <if test="query.minAmount != null">
+                AND af.amount >= #{query.minAmount} * 100
+            </if>
+            <if test="query.maxAmount != null">
+                AND af.amount &lt;= #{query.maxAmount} * 100
+            </if>
+            <if test="query.startTime != null">
+                AND af.create_time >= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND af.create_time &lt;= #{query.endTime}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据账户ID和时间范围统计交易数据 -->
+    <select id="getAccountStatistics" resultMap="AccountStatisticsResultMap">
+        SELECT 
+            COUNT(*) as total,
+            COALESCE(SUM(CASE WHEN flow_type = 'IN' THEN amount ELSE 0 END), 0) as income,
+            COALESCE(SUM(CASE WHEN flow_type = 'OUT' THEN amount ELSE 0 END), 0) as outcome,
+            
+            -- 购物支付 (SHOPPING - OUT)
+            COALESCE(SUM(CASE WHEN flow_type = 'OUT' AND transaction_type = 'SHOPPING' THEN amount ELSE 0 END), 0) as shopping_payment,
+            
+            -- 活动返利收入 (ACTIVITY_REBATE - IN)
+            COALESCE(SUM(CASE WHEN flow_type = 'IN' AND transaction_type = 'ACTIVITY_REBATE' THEN amount ELSE 0 END), 0) as activity_rebate_income,
+            
+            -- 用户转账收入 (USER_TRANSFER - IN)
+            COALESCE(SUM(CASE WHEN flow_type = 'IN' AND transaction_type = 'USER_TRANSFER' THEN amount ELSE 0 END), 0) as user_transfer_income,
+            
+            -- 用户转账支出 (USER_TRANSFER - OUT)
+            COALESCE(SUM(CASE WHEN flow_type = 'OUT' AND transaction_type = 'USER_TRANSFER' THEN amount ELSE 0 END), 0) as user_transfer_expense,
+            
+            -- 商户优惠减免收入 (MERCHANT_DISCOUNT_REDUCTION - IN)
+            COALESCE(SUM(CASE WHEN flow_type = 'IN' AND transaction_type = 'MERCHANT_DISCOUNT_REDUCTION' THEN amount ELSE 0 END), 0) as merchant_discount_income,
+            
+            -- 商户减价收入 (MERCHANT_PRICE_REDUCTION - IN)
+            COALESCE(SUM(CASE WHEN flow_type = 'IN' AND transaction_type = 'MERCHANT_PRICE_REDUCTION' THEN amount ELSE 0 END), 0) as merchant_price_reduction_income,
+            
+            -- 手续费支出（所有交易的手续费总和）
+            COALESCE(SUM(fee_amount), 0) as fee_expense
+            
+        FROM payment_account_flow 
+        WHERE account_id = #{accountId} AND deleted = 0
+        <if test="startTime != null">
+            AND create_time >= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND create_time &lt;= #{endTime}
+        </if>
+        <if test="paymentRegion != null and paymentRegion != ''">
+            AND currency = #{paymentRegion}
+        </if>
+    </select>
+    
+    <!-- 根据账户ID和时间范围统计按交易类型分组的数据 -->
+    <select id="getTransactionTypeStatistics" resultMap="TransactionTypeStatisticsResultMap">
+        SELECT 
+            transaction_type,
+            flow_type,
+            COALESCE(SUM(amount), 0) as amount,
+            COALESCE(COUNT(*), 0) as transaction_count,
+            COALESCE(SUM(fee_amount), 0) as fee_amount,
+            COALESCE(SUM(fee_rate), 0) as total_fee_rate
+        FROM payment_account_flow 
+        WHERE account_id = #{accountId} AND deleted = 0
+        <if test="startTime != null">
+            AND create_time >= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND create_time &lt;= #{endTime}
+        </if>
+        <if test="paymentRegion != null and paymentRegion != ''">
+            AND currency = #{paymentRegion}
+        </if>
+        GROUP BY transaction_type, flow_type
+        ORDER BY flow_type DESC, transaction_type
+    </select>
+
+</mapper> 

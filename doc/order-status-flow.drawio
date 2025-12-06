@@ -1,0 +1,61 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.4 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="26.0.4">
+  <diagram id="order-status-flow" name="订单状态流转">
+    <mxGraphModel dx="1434" dy="854" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="delivery-title" value="外卖配送订单" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="50" y="30" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="delivery-flow" value="[在线支付] 待支付 -&gt; 待确认 -&gt; 已确认 -&gt; 配送中 -&gt; 已完成&#xa;[货到付款] 待确认 -&gt; 已确认 -&gt; 配送中 -&gt; 待支付 -&gt; 已完成" style="rounded=1;whiteSpace=wrap;fillColor=#dae8fc" parent="1" vertex="1">
+          <mxGeometry x="50" y="70" width="400" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="delivery-actions" value="可执行操作:&#xa;待支付: 支付订单、取消订单&#xa;待确认: 商家确认、取消订单&#xa;已确认: 开始配送、取消订单&#xa;配送中: 完成配送&#xa;         [货到付款] 配送中: 送达后等待支付&#xa;         [货到付款] 待支付: 支付订单、取消订单&#xa;         已完成: 申请退款" style="text;strokeColor=none;fillColor=none;fontSize=12" parent="1" vertex="1">
+          <mxGeometry x="50" y="140" width="400" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="pickup-title" value="到店自取订单" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="50" y="250" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pickup-flow" value="待支付 -&gt; 待确认 -&gt; 已确认 -&gt; 待取餐 -&gt; 已完成" style="rounded=1;whiteSpace=wrap;fillColor=#d5e8d4" parent="1" vertex="1">
+          <mxGeometry x="50" y="290" width="400" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="pickup-actions" value="可执行操作:&#xa;待支付: 支付订单、取消订单&#xa;待确认: 商家确认、取消订单&#xa;已确认: 准备取餐、取消订单&#xa;待取餐: 完成取餐&#xa;已完成: 申请退款" style="text;strokeColor=none;fillColor=none;fontSize=12" parent="1" vertex="1">
+          <mxGeometry x="50" y="360" width="400" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="dinein-title" value="店内就餐订单" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="50" y="470" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dinein-flow" value="待支付 -&gt; 待就餐 -&gt; [排队中] -&gt; 就餐中 -&gt; 部分结算/已结算 -&gt; 已完成" style="rounded=1;whiteSpace=wrap;fillColor=#ffe6cc" parent="1" vertex="1">
+          <mxGeometry x="50" y="510" width="500" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dinein-actions" value="可执行操作:&#xa;待支付: 支付订单、取消订单&#xa;待就餐: 开始就餐、进入排队、取消订单&#xa;排队中: 结束排队开始就餐、取消订单&#xa;就餐中: 部分结算、完全结算&#xa;部分结算: 继续结算直至完全结算&#xa;已结算: 完成订单&#xa;已完成: 申请退款" style="text;strokeColor=none;fillColor=none;fontSize=12" parent="1" vertex="1">
+          <mxGeometry x="50" y="580" width="400" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="reservation-title" value="预订订单" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="50" y="750" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="reservation-flow" value="待支付 -&gt; 待确认 -&gt; 已确认 -&gt; 待到店 -&gt; 顾客已到店 -&gt; (就餐中 | [排队中] -&gt; 就餐中) -&gt; 部分结算/已结算 -&gt; 已完成" style="rounded=1;whiteSpace=wrap;fillColor=#e1d5e7" parent="1" vertex="1">
+          <mxGeometry x="50" y="790" width="700" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="reservation-actions" value="可执行操作:&#xa;待支付: 支付订单、取消订单&#xa;待确认: 商家确认、取消订单&#xa;已确认: 等待顾客到店、取消订单&#xa;待到店: 登记顾客到店、取消订单&#xa;顾客已到店: 直接就餐、进入排队、取消订单&#xa;排队中: 结束排队开始就餐、取消订单&#xa;就餐中: 部分结算、完全结算&#xa;部分结算: 继续结算直至完全结算&#xa;已结算: 完成订单&#xa;已完成: 申请退款" style="text;strokeColor=none;fillColor=none;fontSize=12" parent="1" vertex="1">
+          <mxGeometry x="50" y="860" width="400" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="online-title" value="线上订单" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="50" y="1030" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="online-flow" value="待支付 -&gt; 已完成" style="rounded=1;whiteSpace=wrap;fillColor=#f8cecc" parent="1" vertex="1">
+          <mxGeometry x="50" y="1060" width="400" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="online-actions" value="可执行操作:&#xa;待支付: 支付订单、取消订单&#xa;已完成: 申请退款" style="text;strokeColor=none;fillColor=none;fontSize=12" parent="1" vertex="1">
+          <mxGeometry x="50" y="1120" width="400" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="common-title" value="通用状态和操作" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="500" y="30" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="common-states" value="状态转换规则:&#xa;1. 已取消: 除已完成/已退款外的任何状态都可以取消&#xa;2. 退款中: 已支付订单可申请退款&#xa;3. 已退款: 退款审核通过&#xa;&#xa;通用操作:&#xa;1. 取消订单: 任何未完成状态&#xa;2. 申请退款: 已完成状态&#xa;3. 查看订单: 所有状态&#xa;4. 支付订单: 待支付状态&#xa;&#xa;业务规则:&#xa;1. 超时未支付自动取消&#xa;2. 退款申请需要商家审核&#xa;3. 已支付订单取消需要退款&#xa;4. 状态变更会通知相关方         5. 货到付款订单需要配送完成后才能支付&#xa;         6. 货到付款订单支付超时会自动取消" style="text;strokeColor=none;fillColor=none;fontSize=14" parent="1" vertex="1">
+          <mxGeometry x="500" y="70" width="400" height="300" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

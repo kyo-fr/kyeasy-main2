@@ -1,0 +1,22 @@
+server:
+  port: 8300
+
+spring:
+  application:
+    name: merchant-service # 应用名称，用于服务注册
+  profiles:
+    active: dev
+
+# 可以将更多自定义配置放入 Nacos 配置中心
+springdoc:
+  api-docs:
+    path: /v3/api-docs  # 统一文档路径
+
+# SSL 配置
+oracle:
+  net:
+  ssl_server_dn_match: true
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

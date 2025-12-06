@@ -1,0 +1,54 @@
+services:
+  rocketmq:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-nameserver
+    environment:
+      - JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m
+    ports:
+      - "9876:9876"                         # NameServer 端口映射
+    volumes:
+      - ./data/rocketmq/logs:/opt/logs
+      - ./data/rocketmq/store:/opt/store
+    command: sh mqnamesrv
+    networks:
+      - ares-network
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: rocketmq-broker
+    environment:
+      - JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m
+      - NAMESRV_ADDR=rocketmq:9876
+    ports:
+      - "10909:10909"                       # Broker VIP 通道端口
+      - "10911:10911"                       # Broker 主端口
+      - "10912:10912"                       # Broker HA 端口
+    volumes:
+      - ./data/rocketmq/logs:/opt/logs
+      - ./data/rocketmq/store:/opt/store
+      - ./configs/rocketmq/broker.conf:/opt/rocketmq-5.1.4/conf/broker.conf
+    command: sh mqbroker -c /opt/rocketmq-5.1.4/conf/broker.conf
+    depends_on:
+      - rocketmq
+    networks:
+      - ares-network
+
+  rocketmq-dashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rocketmq-dashboard
+    environment:
+      - JAVA_OPTS=-Xmx256M -Xms256M -Drocketmq.namesrv.addr=rocketmq:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+      - ROCKETMQ_NAMESRV_ADDR=rocketmq:9876
+      - ROCKETMQ_BROKER_ADDR=rocketmq-broker:10911
+      - SERVER_PORT=8082
+    ports:
+      - "8082:8082"                         # Dashboard 端口
+    depends_on:
+      - rocketmq
+      - rocketmq-broker
+    networks:
+      - ares-network
+
+networks:
+  ares-network:
+    driver: bridge
